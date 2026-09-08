@@ -568,11 +568,8 @@ person and the bill-level charges allocated to them.
 
 ------------------------------------------------------------------------
 
-```{=html}
+```html
 <p align="center">
-```
-`<strong>`{=html}BillSplit`</strong>`{=html}`<br>`{=html} Read the bill
-with AI. Verify it with a human. Split it with deterministic math.
-```{=html}
+  <strong>BillSplit</strong><br>
+  Read the bill with AI. Verify it with a human. Split it with deterministic math.
 </p>
-```
