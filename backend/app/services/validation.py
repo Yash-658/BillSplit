@@ -55,6 +55,7 @@ def validate_bill(bill: ValidationBill) -> ValidationResult:
 
     messages: list[str] = []
     item_total = 0
+    has_invalid_item_arithmetic = False
 
     for item in bill.items:
         if not all(
@@ -67,10 +68,17 @@ def validate_bill(bill: ValidationBill) -> ValidationResult:
         expected_item_total = item.quantity * item.unit_price
         item_total += item.total_price
         if expected_item_total != item.total_price:
+            has_invalid_item_arithmetic = True
             messages.append(
                 f"Item '{item.name}' total mismatch: expected "
                 f"{expected_item_total} paise, found {item.total_price} paise."
             )
+
+    if has_invalid_item_arithmetic:
+        messages.append(
+            "Item arithmetic is invalid; subtotal validation uses the reviewed "
+            "line totals."
+        )
 
     if bill.subtotal is None:
         messages.append("Subtotal is missing.")

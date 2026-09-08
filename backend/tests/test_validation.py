@@ -39,6 +39,10 @@ def test_item_quantity_price_mismatch():
     )
     assert result.status == "warning"
     assert any("total mismatch" in message for message in result.messages)
+    assert any(
+        "subtotal validation uses the reviewed line totals" in message.lower()
+        for message in result.messages
+    )
 
 
 def test_subtotal_mismatch():
