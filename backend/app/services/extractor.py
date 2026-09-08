@@ -53,9 +53,11 @@ def validate_image_bytes(image: ImageInput) -> None:
         from io import BytesIO
 
         with Image.open(BytesIO(image.data)) as opened:
-            opened.verify()
             if opened.format not in {"JPEG", "PNG", "WEBP"}:
                 raise ValueError
+            # Decode the pixels so valid browser-readable images are accepted
+            # without relying on Pillow's stricter structural verification.
+            opened.load()
     except Exception as error:
         raise ExtractionError("invalid image bytes") from error
 
