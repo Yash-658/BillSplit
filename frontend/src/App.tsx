@@ -21,7 +21,7 @@ function App() {
   const [assignments, setAssignments] = useState<Assignment>(initialAssignments);
   const startOver = () => { setStage("upload"); setBill(mockBill); setPeople(["Yash", "Rahul"]); setAssignments(initialAssignments); };
   return <Layout stage={stage}>
-    {stage === "upload" && <UploadScreen onExtracted={(extractedBill) => { setBill(extractedBill); setStage("review"); }} />}
+    {stage === "upload" && <UploadScreen onExtracted={(extractedBill) => { setBill(extractedBill); setAssignments({}); setStage("review"); }} />}
     {stage === "review" && <ReviewScreen bill={bill} setBill={setBill} onContinue={() => setStage("assign")} />}
     {stage === "assign" && <AssignScreen bill={bill} people={people} setPeople={setPeople} assignments={assignments} setAssignments={setAssignments} onBack={() => setStage("review")} onContinue={() => setStage("results")} />}
     {stage === "results" && <ResultsScreen bill={bill} people={people} assignments={assignments} onBack={() => setStage("assign")} onStartOver={startOver} />}
