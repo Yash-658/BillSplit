@@ -54,3 +54,40 @@ def test_rejects_missing_or_invalid_assignments():
         calculate_split(Bill((item("meal", 100),)), ["A"], {})
     with pytest.raises(ValueError, match="invalid assignment"):
         calculate_split(Bill((item("meal", 100),)), ["A"], {"meal": ["B"]})
+
+
+def test_discount_equal_to_total_consumption():
+    bill = Bill((item("meal", 10001),), discount=10001)
+    result = calculate_split(bill, ["A", "B"], {"meal": ["A", "B"]})
+    assert [result.people[name].discount for name in ["A", "B"]] == [5001, 5000]
+    assert result.allocated_total == result.bill_total == 0
+
+
+def test_discount_greater_than_total_consumption_is_rejected():
+    bill = Bill((item("meal", 100),), discount=101)
+    with pytest.raises(ValueError, match="discount cannot exceed total pre-discount item consumption"):
+        calculate_split(bill, ["A"], {"meal": ["A"]})
+
+
+def test_uneven_three_person_remainder_allocation():
+    bill = Bill((item("meal", 10001),))
+    result = calculate_split(bill, ["A", "B", "C"], {"meal": ["A", "B", "C"]})
+    assert [result.people[name].subtotal for name in ["A", "B", "C"]] == [3334, 3334, 3333]
+    assert result.allocated_total == result.bill_total == 10001
+
+
+def test_positive_adjustments_with_zero_consumption_are_rejected():
+    bill = Bill((), discount=1, service_charge=1, tax=1)
+    with pytest.raises(ValueError, match="without item consumption"):
+        calculate_split(bill, ["A"], {})
+
+
+def test_duplicate_people_are_rejected():
+    with pytest.raises(ValueError, match="unique name"):
+        calculate_split(Bill((item("meal", 100),)), ["A", "A"], {"meal": ["A"]})
+
+
+def test_duplicate_item_ids_are_rejected():
+    bill = Bill((item("meal", 100), item("meal", 200)))
+    with pytest.raises(ValueError, match="duplicate item id"):
+        calculate_split(bill, ["A"], {"meal": ["A"]})

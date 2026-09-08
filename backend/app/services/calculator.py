@@ -158,6 +158,8 @@ def calculate_split(
     adjustments = [bill.discount, bill.service_charge, bill.total_tax]
     if total_consumption == 0 and any(adjustments):
         raise ValueError("cannot allocate bill adjustments without item consumption")
+    if bill.discount > total_consumption:
+        raise ValueError("discount cannot exceed total pre-discount item consumption")
 
     discount_shares = _allocate(bill.discount, consumption, person_names) if bill.discount else [0] * len(person_names)
     service_shares = _allocate(bill.service_charge, consumption, person_names) if bill.service_charge else [0] * len(person_names)
