@@ -116,7 +116,7 @@ corrected.
 
 ### 5. Assignment
 
-Add **2--7 people** and assign each item to:
+Add **2-7 people** and assign each item to:
 
 -   One person
 -   Multiple people
@@ -568,11 +568,7 @@ person and the bill-level charges allocated to them.
 
 ------------------------------------------------------------------------
 
-```{=html}
 <p align="center">
-```
-`<strong>`{=html}BillSplit`</strong>`{=html}`<br>`{=html} Read the bill
-with AI. Verify it with a human. Split it with deterministic math.
-```{=html}
+  <strong>BillSplit</strong><br>
+  Read the bill with AI. Verify it with a human. Split it with deterministic math.
 </p>
-```
