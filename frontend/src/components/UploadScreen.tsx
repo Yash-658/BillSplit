@@ -6,6 +6,7 @@ type Preview = { id: string; name: string; url: string };
 export function UploadScreen({ onContinue }: { onContinue: () => void }) {
   const [previews, setPreviews] = useState<Preview[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
+  const previewsRef = useRef<Preview[]>([]);
 
   function addFiles(files: FileList | null) {
     if (!files) return;
@@ -13,9 +14,19 @@ export function UploadScreen({ onContinue }: { onContinue: () => void }) {
     setPreviews((current) => [...current, ...next]);
   }
 
-  useEffect(() => () => previews.forEach((preview) => URL.revokeObjectURL(preview.url)), [previews]);
+  useEffect(() => {
+    previewsRef.current = previews;
+  }, [previews]);
+
+  useEffect(() => {
+    return () => {
+      previewsRef.current.forEach((preview) => URL.revokeObjectURL(preview.url));
+    };
+  }, []);
 
   function remove(id: string) {
+    const preview = previews.find((candidate) => candidate.id === id);
+    if (preview) URL.revokeObjectURL(preview.url);
     setPreviews((current) => current.filter((preview) => preview.id !== id));
   }
 
