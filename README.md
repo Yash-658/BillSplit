@@ -116,7 +116,7 @@ corrected.
 
 ### 5. Assignment
 
-Add **2--7 people** and assign each item to:
+Add **2-7 people** and assign each item to:
 
 -   One person
 -   Multiple people
