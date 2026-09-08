@@ -1,17 +1,34 @@
 import { ImagePlus, X, ArrowRight, FileImage } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { extractBill } from "../api";
+import type { Bill } from "../types";
 
-type Preview = { id: string; name: string; url: string };
+type Preview = { id: string; file: File; name: string; url: string };
 
-export function UploadScreen({ onContinue }: { onContinue: () => void }) {
+export function UploadScreen({ onExtracted }: { onExtracted: (bill: Bill) => void }) {
   const [previews, setPreviews] = useState<Preview[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const previewsRef = useRef<Preview[]>([]);
 
   function addFiles(files: FileList | null) {
     if (!files) return;
-    const next = Array.from(files).map((file) => ({ id: `${file.name}-${file.lastModified}`, name: file.name, url: URL.createObjectURL(file) }));
+    const next = Array.from(files).map((file, index) => ({ id: `${file.name}-${file.lastModified}-${index}`, file, name: file.name, url: URL.createObjectURL(file) }));
     setPreviews((current) => [...current, ...next]);
+  }
+
+  async function continueToReview() {
+    if (!previews.length || loading) return;
+    setLoading(true);
+    setError(null);
+    try {
+      onExtracted(await extractBill(previews.map((preview) => preview.file)));
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : "Bill extraction failed.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -57,7 +74,8 @@ export function UploadScreen({ onContinue }: { onContinue: () => void }) {
         ) : (
           <div className="mt-6 flex items-center justify-center gap-2 text-sm text-slate-400"><FileImage size={16} /> No photos selected yet</div>
         )}
-        <button type="button" onClick={onContinue} className="button-primary mt-8 w-full sm:w-auto sm:float-right">Continue <ArrowRight size={17} /></button>
+        {error && <p role="alert" className="mt-5 rounded-xl bg-red-50 p-3 text-sm font-medium text-red-700">{error}</p>}
+        <button type="button" onClick={continueToReview} disabled={!previews.length || loading} className="button-primary mt-8 w-full sm:w-auto sm:float-right disabled:cursor-not-allowed disabled:opacity-50">{loading ? "Extracting bill..." : <>Continue <ArrowRight size={17} /></>}</button>
         <div className="clear-both" />
       </div>
     </section>
