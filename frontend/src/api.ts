@@ -25,6 +25,14 @@ type BillExtraction = {
 
 const valueOf = (field: ExtractedNumericField | null) => field?.value ?? null;
 
+export type ValidationResult = {
+  status: string;
+  calculated_total: number | null;
+  printed_total: number | null;
+  difference: number | null;
+  messages: string[];
+};
+
 export async function extractBill(files: File[]): Promise<Bill> {
   const formData = new FormData();
   files.forEach((file) => formData.append("files", file));
@@ -65,4 +73,42 @@ export async function extractBill(files: File[]): Promise<Bill> {
       printedTotal: extraction.printed_total?.confidence ?? null,
     },
   };
+}
+
+export async function validateBill(bill: Bill): Promise<ValidationResult> {
+  const payload = {
+    items: bill.items.map((item) => {
+      if (item.name === null || item.quantity === null || item.unitPrice === null || item.totalPrice === null) {
+        throw new Error("Complete each item's name, quantity, unit price, and total before confirming.");
+      }
+      return {
+        id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        unit_price: item.unitPrice,
+        total_price: item.totalPrice,
+      };
+    }),
+    subtotal: bill.subtotal,
+    discount: bill.discount,
+    service_charge: bill.serviceCharge,
+    tax: bill.taxes.reduce((sum, value) => sum + value, 0),
+    printed_total: bill.printedTotal,
+  };
+  const response = await fetch(`${API_BASE_URL}/validate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    let detail = "Bill validation failed.";
+    try {
+      const body = await response.json() as { detail?: string | string[] };
+      if (body.detail) detail = Array.isArray(body.detail) ? body.detail.join(" ") : body.detail;
+    } catch {
+      // Keep the user-facing fallback for non-JSON or unavailable responses.
+    }
+    throw new Error(detail);
+  }
+  return await response.json() as ValidationResult;
 }

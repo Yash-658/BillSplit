@@ -1,4 +1,6 @@
 import { ArrowRight, CheckCircle2, Info } from "lucide-react";
+import { useState } from "react";
+import { validateBill, type ValidationResult } from "../api";
 import type { Bill } from "../types";
 
 const money = (value: number | null) => value === null ? "—" : `₹${(value / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
@@ -14,6 +16,9 @@ const parseMoney = (value: string) => {
 };
 
 export function ReviewScreen({ bill, setBill, onContinue }: { bill: Bill; setBill: (bill: Bill) => void; onContinue: () => void }) {
+  const [validation, setValidation] = useState<ValidationResult | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [validating, setValidating] = useState(false);
   const itemTotal = bill.items.reduce((sum, item) => sum + (item.totalPrice ?? 0), 0);
   const subtotal = bill.subtotal ?? 0;
   const discount = bill.discount ?? 0;
@@ -35,6 +40,22 @@ export function ReviewScreen({ bill, setBill, onContinue }: { bill: Bill; setBil
   const confidence = confidenceValues.length
     ? Math.round(confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length * 100)
     : null;
+  const blockingMessages = validation?.messages.filter((message) => !message.startsWith("Printed total mismatch:") && message !== "Printed total is missing.") ?? [];
+  async function confirmBill() {
+    if (validating) return;
+    setValidating(true);
+    setValidationError(null);
+    try {
+      const result = await validateBill(bill);
+      setValidation(result);
+      if (!blockingMessagesFor(result.messages).length) onContinue();
+    } catch (error) {
+      setValidationError(error instanceof Error ? error.message : "Bill validation failed.");
+    } finally {
+      setValidating(false);
+    }
+  }
+  const blockingMessagesFor = (messages: string[]) => messages.filter((message) => !message.startsWith("Printed total mismatch:") && message !== "Printed total is missing.");
 
   return (
     <section>
@@ -55,7 +76,11 @@ export function ReviewScreen({ bill, setBill, onContinue }: { bill: Bill; setBil
           {([["subtotal", "Subtotal"], ["discount", "Discount"], ["serviceCharge", "Service charge"], ["adjustment", "Adjustment"], ["printedTotal", "Printed total"]] as const).map(([field, label]) => <label className="text-sm font-semibold text-slate-600" key={field}>{label}<input className="input mt-2" type="number" step="0.01" value={editable(bill[field])} placeholder="—" onChange={(event) => updateBill(field, event.target.value === "" ? null : parseMoney(event.target.value))} /></label>)}
         </div>
         <div className="mx-5 mb-5 flex items-start gap-3 rounded-xl bg-amber-50 p-4 text-sm text-amber-900"><Info size={18} className="mt-0.5 shrink-0" /><div><p className="font-bold">{warning ? "Review needed" : "Bill arithmetic looks good"}</p><p className="mt-1">{warning ? `Calculated total ${money(calculated)} does not match the reviewed values. You can continue after checking them.` : "Totals reconcile with the line items."}</p><p className="mt-2 text-xs">Taxes: {money(tax)} (sum of {bill.taxes.length} extracted tax{bill.taxes.length === 1 ? "" : "es"})</p><p className="mt-1 text-xs">Adjustment: {money(bill.adjustment)}</p></div></div>
-        <div className="flex justify-end border-t border-slate-100 p-5"><button type="button" onClick={onContinue} className="button-primary">Confirm Bill <ArrowRight size={17} /></button></div>
+        {(validationError || validation) && <div className={`mx-5 mb-5 rounded-xl p-4 text-sm ${validationError || blockingMessages.length ? "bg-red-50 text-red-800" : "bg-amber-50 text-amber-900"}`} role="alert">
+          <p className="font-bold">{validationError ? "Validation could not be completed" : blockingMessages.length ? "Please correct these bill values" : "Validation warnings"}</p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">{validationError ? <li>{validationError}</li> : validation?.messages.map((message) => <li key={message}>{message}</li>)}</ul>
+        </div>}
+        <div className="flex justify-end border-t border-slate-100 p-5"><button type="button" onClick={confirmBill} disabled={validating} className="button-primary disabled:cursor-not-allowed disabled:opacity-50">{validating ? "Validating bill..." : <>Confirm Bill <ArrowRight size={17} /></>}</button></div>
       </div>
     </section>
   );
