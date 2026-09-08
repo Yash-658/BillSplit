@@ -444,6 +444,38 @@ http://localhost:5173
 
 ------------------------------------------------------------------------
 
+## 🚀 Deploying on Koyeb
+
+Create two Koyeb services from this repository.
+
+### Frontend service
+
+- Build context / work directory: `frontend`
+- Dockerfile: `Dockerfile`
+- Port: `80`
+- Environment variable: `VITE_API_BASE_URL=https://<backend-koyeb-url>`
+
+Configure `VITE_API_BASE_URL` in the Koyeb frontend service environment so it
+is available while the Vite build runs. It is not hard-coded in the image.
+
+### Backend service
+
+- Build context: repository root
+- Dockerfile: `backend/Dockerfile`
+- Port: `$PORT` (Koyeb supplies this automatically)
+- Environment variables:
+
+``` env
+GEMINI_API_KEY=your_api_key_here
+GEMINI_VISION_MODEL=your_supported_gemini_model
+FRONTEND_ORIGIN=https://<frontend-koyeb-url>
+```
+
+The backend always allows `http://localhost:5173` for local development and
+also allows the configured `FRONTEND_ORIGIN`. Do not use `*` or commit secrets.
+
+------------------------------------------------------------------------
+
 ## 🔌 API
 
   -----------------------------------------------------------------------
