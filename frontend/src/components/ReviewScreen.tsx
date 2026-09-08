@@ -1,6 +1,7 @@
 import { ArrowRight, CheckCircle2, Info } from "lucide-react";
 import { useState } from "react";
 import { validateBill, type ValidationResult } from "../api";
+import { formatValidationMessage } from "../format";
 import type { Bill } from "../types";
 
 const money = (value: number | null) => value === null ? "—" : `₹${(value / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
@@ -83,7 +84,7 @@ export function ReviewScreen({ bill, setBill, onContinue }: { bill: Bill; setBil
         <div className="mx-5 mb-5 flex items-start gap-3 rounded-xl bg-amber-50 p-4 text-sm text-amber-900"><Info size={18} className="mt-0.5 shrink-0" /><div><p className="font-bold">{warning ? "Review needed" : "Bill arithmetic looks good"}</p><p className="mt-1">{warning ? `Calculated total ${money(calculated)} does not match the reviewed values. You can continue after checking them.` : "Totals reconcile with the line items."}</p><p className="mt-2 text-xs">Taxes: {money(tax)} (sum of {bill.taxes.length} extracted tax{bill.taxes.length === 1 ? "" : "es"})</p><p className="mt-1 text-xs">Adjustment: {money(bill.adjustment)}</p></div></div>
         {(validationError || validation) && <div className={`mx-5 mb-5 rounded-xl p-4 text-sm ${validationError || blockingMessages.length ? "bg-red-50 text-red-800" : "bg-amber-50 text-amber-900"}`} role="alert">
           <p className="font-bold">{validationError ? "Validation could not be completed" : blockingMessages.length ? "Please correct these bill values" : "Validation warnings"}</p>
-          <ul className="mt-2 list-disc space-y-1 pl-5">{validationError ? <li>{validationError}</li> : validation?.messages.map((message) => <li key={message}>{message}</li>)}</ul>
+          <ul className="mt-2 list-disc space-y-1 pl-5">{validationError ? <li>{validationError}</li> : validation?.messages.map((message) => <li key={message}>{formatValidationMessage(message)}</li>)}</ul>
         </div>}
         <div className="flex justify-end border-t border-slate-100 p-5"><button type="button" onClick={confirmBill} disabled={validating} className="button-primary disabled:cursor-not-allowed disabled:opacity-50">{validating ? "Validating bill..." : <>Confirm Bill <ArrowRight size={17} /></>}</button></div>
       </div>
