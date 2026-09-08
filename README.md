@@ -568,7 +568,6 @@ person and the bill-level charges allocated to them.
 
 ------------------------------------------------------------------------
 
-```html
 <p align="center">
   <strong>BillSplit</strong><br>
   Read the bill with AI. Verify it with a human. Split it with deterministic math.
