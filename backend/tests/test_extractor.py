@@ -73,7 +73,18 @@ def test_optional_fields_can_be_missing():
         [ImageInput(PNG_BYTES, "image/png")]
     )
     assert result.discount is None
+    assert result.adjustment is None
     assert result.printed_total is None
+
+
+def test_positive_adjustment_is_preserved():
+    result = BillExtraction(items=[], adjustment=76)
+    assert result.adjustment == 76
+
+
+def test_negative_adjustment_is_preserved():
+    result = BillExtraction(items=[], adjustment=-11)
+    assert result.adjustment == -11
 
 
 def test_confidence_values_are_preserved():

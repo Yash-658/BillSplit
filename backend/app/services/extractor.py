@@ -19,7 +19,11 @@ languages. Multiple images may be pages or different views of the same bill.
 If a value cannot be determined reliably, return null and lower confidence.
 Preserve actual printed item names and amounts. Return all money values as
 integer paise/cents, not floating-point amounts. Do not calculate people's
-shares, decide who owes what, or perform final bill arithmetic.
+shares, decide who owes what, or perform final bill arithmetic. Extract a
+visible bill-level adjustment or round-off amount when present, preserving its
+sign. Return null when no adjustment is visible; do not invent an adjustment
+or use one to silently correct another extracted value. Human review will
+verify or edit this field.
 """
 
 

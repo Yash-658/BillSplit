@@ -27,4 +27,5 @@ class BillExtraction(BaseModel):
     discount: ExtractedNumericField | None = None
     service_charge: ExtractedNumericField | None = None
     taxes: list[ExtractedNumericField] = Field(default_factory=list)
+    adjustment: int | None = None
     printed_total: ExtractedNumericField | None = None
