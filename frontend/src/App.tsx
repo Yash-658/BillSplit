@@ -25,7 +25,7 @@ function App() {
     {stage === "upload" && <UploadScreen onExtracted={(extractedBill) => { setBill(extractedBill); setAssignments({}); setStage("review"); }} />}
     {stage === "review" && <ReviewScreen bill={bill} setBill={setBill} onContinue={() => setStage("assign")} />}
     {stage === "assign" && <AssignScreen bill={bill} people={people} setPeople={setPeople} assignments={assignments} setAssignments={setAssignments} onBack={() => setStage("review")} onContinue={(result) => { setCalculation(result); setStage("results"); }} />}
-    {stage === "results" && calculation && <ResultsScreen result={calculation} onBack={() => setStage("assign")} onStartOver={startOver} />}
+    {stage === "results" && calculation && <ResultsScreen bill={bill} result={calculation} onBack={() => setStage("assign")} onStartOver={startOver} />}
   </Layout>;
 }
 
