@@ -37,6 +37,21 @@ class ImageInput:
     mime_type: str
 
 
+def validate_image_bytes(image: ImageInput) -> None:
+    """Verify the bytes contain an image of the declared supported type."""
+
+    try:
+        from PIL import Image
+        from io import BytesIO
+
+        with Image.open(BytesIO(image.data)) as opened:
+            opened.verify()
+            if opened.format not in {"JPEG", "PNG", "WEBP"}:
+                raise ValueError
+    except Exception as error:
+        raise ExtractionError("invalid image bytes") from error
+
+
 class GeminiExtractor:
     """Thin adapter around the official Google GenAI SDK."""
 
@@ -65,6 +80,8 @@ class GeminiExtractor:
             raise ExtractionError("unsupported image type")
         if any(len(image.data) > MAX_IMAGE_BYTES for image in images):
             raise ExtractionError("image exceeds the 10 MB size limit")
+        for image in images:
+            validate_image_bytes(image)
 
         try:
             from google.genai import types

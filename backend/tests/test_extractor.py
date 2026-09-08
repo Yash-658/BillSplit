@@ -10,6 +10,12 @@ from backend.app.services.extractor import (
     MissingGeminiAPIKeyError,
 )
 
+PNG_BYTES = (
+    b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+    b"\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc\xf8\xff"
+    b"\xff?\x00\x05\xfe\x02\xfe\r\xefF\xb8\x00\x00\x00\x00IEND\xaeB`\x82"
+)
+
 
 def extracted_bill() -> BillExtraction:
     return BillExtraction.model_validate(
@@ -50,18 +56,21 @@ def test_successful_extraction_sends_multiple_images():
     models = FakeModels(extracted_bill())
     extractor = GeminiExtractor(client=SimpleNamespace(models=models), api_key="test")
     result = extractor.extract(
-        [ImageInput(b"one", "image/jpeg"), ImageInput(b"two", "image/png")]
+        [ImageInput(PNG_BYTES, "image/png"), ImageInput(PNG_BYTES, "image/png")]
     )
     assert result.items[0].total_price.value == 10000
     assert len(result.taxes) == 2
     assert len(models.calls[0]["contents"]) == 3
+    config = models.calls[0]["config"]
+    assert config.response_mime_type == "application/json"
+    assert config.response_schema is BillExtraction
 
 
 def test_optional_fields_can_be_missing():
     model = BillExtraction(items=[])
     models = FakeModels(model)
     result = GeminiExtractor(client=SimpleNamespace(models=models)).extract(
-        [ImageInput(b"image", "image/webp")]
+        [ImageInput(PNG_BYTES, "image/png")]
     )
     assert result.discount is None
     assert result.printed_total is None
@@ -77,7 +86,7 @@ def test_malformed_model_output_raises():
     models = FakeModels({"items": [{"bad": "output"}]})
     with pytest.raises(ExtractionError, match="invalid structured extraction"):
         GeminiExtractor(client=SimpleNamespace(models=models)).extract(
-            [ImageInput(b"image", "image/jpeg")]
+            [ImageInput(PNG_BYTES, "image/png")]
         )
 
 
@@ -88,11 +97,11 @@ def test_gemini_failure_is_wrapped():
 
     with pytest.raises(ExtractionError, match="request failed"):
         GeminiExtractor(client=SimpleNamespace(models=FailingModels())).extract(
-            [ImageInput(b"image", "image/jpeg")]
+            [ImageInput(PNG_BYTES, "image/png")]
         )
 
 
 def test_missing_api_key_is_reported(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     with pytest.raises(MissingGeminiAPIKeyError, match="GEMINI_API_KEY is not configured"):
-        GeminiExtractor().extract([ImageInput(b"image", "image/jpeg")])
+        GeminiExtractor().extract([ImageInput(PNG_BYTES, "image/png")])
