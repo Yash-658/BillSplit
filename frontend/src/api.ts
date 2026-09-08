@@ -3,27 +3,29 @@ import type { Assignment, Bill, CalculateResult } from "./types";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
 type ExtractedNumericField = { value: number | null; confidence: number };
+type ExtractedTextField = { value: string | null; confidence: number };
 type ExtractedItem = {
   id: string | null;
-  name: string | null;
-  quantity: number | null;
+  name: ExtractedTextField;
+  quantity: ExtractedNumericField;
   unit_price: ExtractedNumericField | null;
   total_price: ExtractedNumericField | null;
   confidence: number;
 };
 type BillExtraction = {
-  restaurant_name: string | null;
-  currency: string | null;
+  restaurant_name: ExtractedTextField | null;
+  currency: ExtractedTextField | null;
   items: ExtractedItem[];
   subtotal: ExtractedNumericField | null;
   discount: ExtractedNumericField | null;
   service_charge: ExtractedNumericField | null;
   taxes: ExtractedNumericField[];
-  adjustment: number | null;
+  adjustment: ExtractedNumericField | null;
   printed_total: ExtractedNumericField | null;
 };
 
 const valueOf = (field: ExtractedNumericField | null) => field?.value ?? null;
+const textValueOf = (field: ExtractedTextField | null) => field?.value ?? null;
 
 export type ValidationResult = {
   status: string;
@@ -49,27 +51,34 @@ export async function extractBill(files: File[]): Promise<Bill> {
   }
   const extraction = await response.json() as BillExtraction;
   return {
-    restaurantName: extraction.restaurant_name,
-    currency: extraction.currency,
+    restaurantName: textValueOf(extraction.restaurant_name),
+    currency: textValueOf(extraction.currency),
     items: extraction.items.map((item, index) => ({
       id: item.id ?? `extracted-item-${index}`,
-      name: item.name,
-      quantity: item.quantity,
+      name: item.name.value,
+      quantity: item.quantity.value,
       unitPrice: valueOf(item.unit_price),
       totalPrice: valueOf(item.total_price),
       confidence: item.confidence,
+      nameConfidence: item.name.confidence,
+      quantityConfidence: item.quantity.confidence,
+      unitPriceConfidence: item.unit_price?.confidence ?? null,
+      totalPriceConfidence: item.total_price?.confidence ?? null,
     })),
     subtotal: valueOf(extraction.subtotal),
     discount: valueOf(extraction.discount),
     serviceCharge: valueOf(extraction.service_charge),
     taxes: extraction.taxes.map((tax) => tax.value).filter((value): value is number => value !== null),
-    adjustment: extraction.adjustment,
+    adjustment: valueOf(extraction.adjustment),
     printedTotal: valueOf(extraction.printed_total),
     confidence: {
+      restaurantName: extraction.restaurant_name?.confidence ?? null,
+      currency: extraction.currency?.confidence ?? null,
       subtotal: extraction.subtotal?.confidence ?? null,
       discount: extraction.discount?.confidence ?? null,
       serviceCharge: extraction.service_charge?.confidence ?? null,
       taxes: extraction.taxes.map((tax) => tax.confidence),
+      adjustment: extraction.adjustment?.confidence ?? null,
       printedTotal: extraction.printed_total?.confidence ?? null,
     },
   };

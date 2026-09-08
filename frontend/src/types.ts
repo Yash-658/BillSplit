@@ -7,6 +7,10 @@ export type BillItem = {
   unitPrice: number | null;
   totalPrice: number | null;
   confidence: number | null;
+  nameConfidence: number | null;
+  quantityConfidence: number | null;
+  unitPriceConfidence: number | null;
+  totalPriceConfidence: number | null;
 };
 
 export type Bill = {
@@ -20,10 +24,13 @@ export type Bill = {
   adjustment: number | null;
   printedTotal: number | null;
   confidence: {
+    restaurantName: number | null;
+    currency: number | null;
     subtotal: number | null;
     discount: number | null;
     serviceCharge: number | null;
     taxes: number[];
+    adjustment: number | null;
     printedTotal: number | null;
   };
 };

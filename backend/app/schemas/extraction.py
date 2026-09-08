@@ -10,22 +10,29 @@ class ExtractedNumericField(BaseModel):
     confidence: float = Field(ge=0, le=1)
 
 
+class ExtractedTextField(BaseModel):
+    """A nullable extracted text value with field-specific confidence."""
+
+    value: str | None = None
+    confidence: float = Field(ge=0, le=1)
+
+
 class ExtractedItem(BaseModel):
     id: str | None = None
-    name: str | None = None
-    quantity: int | None = None
+    name: ExtractedTextField
+    quantity: ExtractedNumericField
     unit_price: ExtractedNumericField
     total_price: ExtractedNumericField
     confidence: float = Field(ge=0, le=1)
 
 
 class BillExtraction(BaseModel):
-    restaurant_name: str | None = None
-    currency: str | None = None
+    restaurant_name: ExtractedTextField | None = None
+    currency: ExtractedTextField | None = None
     items: list[ExtractedItem]
     subtotal: ExtractedNumericField | None = None
     discount: ExtractedNumericField | None = None
     service_charge: ExtractedNumericField | None = None
     taxes: list[ExtractedNumericField] = Field(default_factory=list)
-    adjustment: int | None = None
+    adjustment: ExtractedNumericField | None = None
     printed_total: ExtractedNumericField | None = None

@@ -20,24 +20,27 @@ PNG_BYTES = (
 def extracted_bill() -> BillExtraction:
     return BillExtraction.model_validate(
         {
-            "restaurant_name": "Cafe",
-            "currency": "INR",
+            "restaurant_name": {"value": "Cafe", "confidence": 0.91},
+            "currency": {"value": "INR", "confidence": 0.92},
             "items": [
                 {
                     "id": "meal",
-                    "name": "Meal",
-                    "quantity": 2,
+                    "name": {"value": "Meal", "confidence": 0.93},
+                    "quantity": {"value": 2, "confidence": 0.94},
                     "unit_price": {"value": 5000, "confidence": 0.98},
                     "total_price": {"value": 10000, "confidence": 0.97},
                     "confidence": 0.96,
                 }
             ],
             "subtotal": {"value": 10000, "confidence": 0.95},
+            "discount": {"value": 100, "confidence": 0.86},
+            "service_charge": {"value": 200, "confidence": 0.87},
             "taxes": [
                 {"value": 500, "confidence": 0.9},
                 {"value": 250, "confidence": 0.8},
             ],
-            "printed_total": {"value": 10750, "confidence": 0.99},
+            "adjustment": {"value": -1, "confidence": 0.78},
+            "printed_total": {"value": 10949, "confidence": 0.99},
         }
     )
 
@@ -73,24 +76,69 @@ def test_optional_fields_can_be_missing():
         [ImageInput(PNG_BYTES, "image/png")]
     )
     assert result.discount is None
+    assert result.restaurant_name is None
+    assert result.currency is None
     assert result.adjustment is None
     assert result.printed_total is None
 
 
+def test_nullable_item_fields_preserve_null_values_and_confidence():
+    result = BillExtraction.model_validate(
+        {
+            "items": [
+                {
+                    "id": None,
+                    "name": {"value": None, "confidence": 0.2},
+                    "quantity": {"value": None, "confidence": 0.3},
+                    "unit_price": {"value": None, "confidence": 0.4},
+                    "total_price": {"value": None, "confidence": 0.5},
+                    "confidence": 0.2,
+                }
+            ]
+        }
+    )
+    item = result.items[0]
+    assert item.name.value is None
+    assert item.quantity.value is None
+    assert item.unit_price.value is None
+    assert item.total_price.value is None
+    assert item.name.confidence == 0.2
+    assert item.quantity.confidence == 0.3
+
+
 def test_positive_adjustment_is_preserved():
-    result = BillExtraction(items=[], adjustment=76)
-    assert result.adjustment == 76
+    result = BillExtraction(
+        items=[],
+        adjustment={"value": 76, "confidence": 0.88},
+    )
+    assert result.adjustment.value == 76
+    assert result.adjustment.confidence == 0.88
 
 
 def test_negative_adjustment_is_preserved():
-    result = BillExtraction(items=[], adjustment=-11)
-    assert result.adjustment == -11
+    result = BillExtraction(
+        items=[],
+        adjustment={"value": -11, "confidence": 0.89},
+    )
+    assert result.adjustment.value == -11
+    assert result.adjustment.confidence == 0.89
 
 
 def test_confidence_values_are_preserved():
     result = extracted_bill()
+    assert result.restaurant_name.confidence == 0.91
+    assert result.currency.confidence == 0.92
+    assert result.items[0].name.confidence == 0.93
+    assert result.items[0].quantity.confidence == 0.94
     assert result.items[0].confidence == 0.96
     assert result.items[0].unit_price.confidence == 0.98
+    assert result.items[0].total_price.confidence == 0.97
+    assert result.subtotal.confidence == 0.95
+    assert result.discount.confidence == 0.86
+    assert result.service_charge.confidence == 0.87
+    assert [tax.confidence for tax in result.taxes] == [0.9, 0.8]
+    assert result.adjustment.confidence == 0.78
+    assert result.printed_total.confidence == 0.99
 
 
 def test_malformed_model_output_raises():

@@ -5,6 +5,7 @@ import type { Bill } from "../types";
 
 const money = (value: number | null) => value === null ? "—" : `₹${(value / 100).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
 const editable = (value: number | null) => value === null ? "" : (value / 100).toFixed(2);
+const fieldConfidence = (value: number | null) => value === null ? null : `${Math.round(value * 100)}%`;
 const parseMoney = (value: string) => {
   const normalized = value.trim();
   const sign = normalized.startsWith("-") ? -1 : 1;
@@ -30,14 +31,18 @@ export function ReviewScreen({ bill, setBill, onContinue }: { bill: Bill; setBil
   const warning = calculated !== (bill.printedTotal ?? 0) || itemTotal !== subtotal;
   const currency = bill.currency ?? "INR";
   const confidenceValues = [
+    bill.confidence.restaurantName,
+    bill.confidence.currency,
     ...bill.items.map((item) => item.confidence),
+    ...bill.items.flatMap((item) => [item.nameConfidence, item.quantityConfidence, item.unitPriceConfidence, item.totalPriceConfidence]),
     bill.confidence.subtotal,
     bill.confidence.discount,
     bill.confidence.serviceCharge,
     ...bill.confidence.taxes,
+    bill.confidence.adjustment,
     bill.confidence.printedTotal,
   ].filter((value): value is number => value !== null);
-  const confidence = confidenceValues.length
+  const extractionConfidence = confidenceValues.length
     ? Math.round(confidenceValues.reduce((sum, value) => sum + value, 0) / confidenceValues.length * 100)
     : null;
   const blockingMessages = validation?.messages.filter((message) => !message.startsWith("Printed total mismatch:") && message !== "Printed total is missing.") ?? [];
@@ -60,7 +65,7 @@ export function ReviewScreen({ bill, setBill, onContinue }: { bill: Bill; setBil
   return (
     <section>
       <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-        <div><p className="mb-2 text-sm font-bold uppercase tracking-[0.18em] text-coral">Step 2 · Human verification</p><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Review your bill</h1><p className="mt-2 text-slate-500">Check the extracted values and correct anything that looks off.</p>{bill.restaurantName && <p className="mt-2 text-sm font-semibold text-slate-700">{bill.restaurantName} · {currency}</p>}{confidence !== null && <p className="mt-1 text-xs text-slate-500">Extraction confidence: {confidence}%</p>}</div>
+        <div><p className="mb-2 text-sm font-bold uppercase tracking-[0.18em] text-coral">Step 2 · Human verification</p><h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Review your bill</h1><p className="mt-2 text-slate-500">Check the extracted values and correct anything that looks off.</p>{(bill.restaurantName || bill.currency) && <p className="mt-2 text-sm font-semibold text-slate-700">{bill.restaurantName ?? "Unnamed restaurant"} <span className="font-normal">· {currency}</span>{fieldConfidence(bill.confidence.restaurantName) && <span className="ml-2 text-xs font-normal text-slate-400">{fieldConfidence(bill.confidence.restaurantName)} name confidence</span>}{fieldConfidence(bill.confidence.currency) && <span className="ml-2 text-xs font-normal text-slate-400">{fieldConfidence(bill.confidence.currency)} currency confidence</span>}</p>}{extractionConfidence !== null && <p className="mt-1 text-xs text-slate-500">Extraction confidence: {extractionConfidence}%</p>}</div>
         <div className="flex items-center gap-2 rounded-xl bg-mint px-3 py-2 text-sm font-semibold text-emerald-800"><CheckCircle2 size={17} /> You&apos;re in control</div>
       </div>
       <div className="panel overflow-hidden">
@@ -68,12 +73,12 @@ export function ReviewScreen({ bill, setBill, onContinue }: { bill: Bill; setBil
           <table className="w-full min-w-[650px] text-left text-sm">
             <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500"><tr><th className="px-5 py-4 font-semibold">Item</th><th className="px-3 py-4 font-semibold">Qty</th><th className="px-3 py-4 font-semibold">Unit price</th><th className="px-3 py-4 font-semibold">Total</th></tr></thead>
             <tbody className="divide-y divide-slate-100">
-              {bill.items.map((item) => <tr key={item.id}><td className="px-5 py-4 font-medium">{item.name ?? "Unnamed item"}</td><td className="px-3 py-4"><input className="input w-20" type="number" min="0" value={item.quantity ?? ""} onChange={(event) => updateItem(item.id, "quantity", event.target.value === "" ? null : Number(event.target.value))} /></td><td className="px-3 py-4"><input className="input w-28" type="number" min="0" step="0.01" value={editable(item.unitPrice)} onChange={(event) => updateItem(item.id, "unitPrice", event.target.value === "" ? null : parseMoney(event.target.value))} /></td><td className="px-3 py-4"><input className="input w-28" type="number" min="0" step="0.01" value={editable(item.totalPrice)} onChange={(event) => updateItem(item.id, "totalPrice", event.target.value === "" ? null : parseMoney(event.target.value))} /></td></tr>)}
+              {bill.items.map((item) => <tr key={item.id}><td className="px-5 py-4 font-medium">{item.name ?? "Unnamed item"}{fieldConfidence(item.nameConfidence) && <span className="ml-2 text-xs font-normal text-slate-400">{fieldConfidence(item.nameConfidence)}</span>}</td><td className="px-3 py-4"><input className="input w-20" type="number" min="0" value={item.quantity ?? ""} onChange={(event) => updateItem(item.id, "quantity", event.target.value === "" ? null : Number(event.target.value))} />{fieldConfidence(item.quantityConfidence) && <span className="mt-1 block text-xs text-slate-400">{fieldConfidence(item.quantityConfidence)}</span>}</td><td className="px-3 py-4"><input className="input w-28" type="number" min="0" step="0.01" value={editable(item.unitPrice)} onChange={(event) => updateItem(item.id, "unitPrice", event.target.value === "" ? null : parseMoney(event.target.value))} />{fieldConfidence(item.unitPriceConfidence) && <span className="mt-1 block text-xs text-slate-400">{fieldConfidence(item.unitPriceConfidence)}</span>}</td><td className="px-3 py-4"><input className="input w-28" type="number" min="0" step="0.01" value={editable(item.totalPrice)} onChange={(event) => updateItem(item.id, "totalPrice", event.target.value === "" ? null : parseMoney(event.target.value))} />{fieldConfidence(item.totalPriceConfidence) && <span className="mt-1 block text-xs text-slate-400">{fieldConfidence(item.totalPriceConfidence)}</span>}</td></tr>)}
             </tbody>
           </table>
         </div>
         <div className="grid gap-4 border-t border-slate-100 p-5 sm:grid-cols-2 lg:grid-cols-4">
-          {([["subtotal", "Subtotal"], ["discount", "Discount"], ["serviceCharge", "Service charge"], ["adjustment", "Adjustment"], ["printedTotal", "Printed total"]] as const).map(([field, label]) => <label className="text-sm font-semibold text-slate-600" key={field}>{label}<input className="input mt-2" type="number" step="0.01" value={editable(bill[field])} placeholder="—" onChange={(event) => updateBill(field, event.target.value === "" ? null : parseMoney(event.target.value))} /></label>)}
+          {([["subtotal", "Subtotal", bill.confidence.subtotal], ["discount", "Discount", bill.confidence.discount], ["serviceCharge", "Service charge", bill.confidence.serviceCharge], ["adjustment", "Adjustment", bill.confidence.adjustment], ["printedTotal", "Printed total", bill.confidence.printedTotal]] as const).map(([field, label, fieldConfidenceValue]) => <label className="text-sm font-semibold text-slate-600" key={field}>{label}{fieldConfidence(fieldConfidenceValue) && <span className="ml-2 text-xs font-normal text-slate-400">{fieldConfidence(fieldConfidenceValue)}</span>}<input className="input mt-2" type="number" step="0.01" value={editable(bill[field])} placeholder="—" onChange={(event) => updateBill(field, event.target.value === "" ? null : parseMoney(event.target.value))} /></label>)}
         </div>
         <div className="mx-5 mb-5 flex items-start gap-3 rounded-xl bg-amber-50 p-4 text-sm text-amber-900"><Info size={18} className="mt-0.5 shrink-0" /><div><p className="font-bold">{warning ? "Review needed" : "Bill arithmetic looks good"}</p><p className="mt-1">{warning ? `Calculated total ${money(calculated)} does not match the reviewed values. You can continue after checking them.` : "Totals reconcile with the line items."}</p><p className="mt-2 text-xs">Taxes: {money(tax)} (sum of {bill.taxes.length} extracted tax{bill.taxes.length === 1 ? "" : "es"})</p><p className="mt-1 text-xs">Adjustment: {money(bill.adjustment)}</p></div></div>
         {(validationError || validation) && <div className={`mx-5 mb-5 rounded-xl p-4 text-sm ${validationError || blockingMessages.length ? "bg-red-50 text-red-800" : "bg-amber-50 text-amber-900"}`} role="alert">

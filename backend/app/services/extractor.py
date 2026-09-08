@@ -17,6 +17,10 @@ detect inconsistencies. Handle poor lighting, perspective or steep angles,
 faded thermal printing, crumpled bills, handwriting, and multiple scripts or
 languages. Multiple images may be pages or different views of the same bill.
 If a value cannot be determined reliably, return null and lower confidence.
+Return confidence independently for every extracted field. Each confidence
+must describe confidence in that specific field's transcription or extraction,
+not confidence in the bill or a related field. Do not invent confidence
+values independently of an extracted value.
 Preserve actual printed item names and amounts. Return all money values as
 integer paise/cents, not floating-point amounts. Do not calculate people's
 shares, decide who owes what, or perform final bill arithmetic. Extract a
