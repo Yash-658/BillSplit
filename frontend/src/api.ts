@@ -1,4 +1,4 @@
-import type { Bill } from "./types";
+import type { Assignment, Bill, CalculateResult } from "./types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
@@ -76,39 +76,61 @@ export async function extractBill(files: File[]): Promise<Bill> {
 }
 
 export async function validateBill(bill: Bill): Promise<ValidationResult> {
-  const payload = {
-    items: bill.items.map((item) => {
-      if (item.name === null || item.quantity === null || item.unitPrice === null || item.totalPrice === null) {
-        throw new Error("Complete each item's name, quantity, unit price, and total before confirming.");
-      }
-      return {
-        id: item.id,
-        name: item.name,
-        quantity: item.quantity,
-        unit_price: item.unitPrice,
-        total_price: item.totalPrice,
-      };
-    }),
+  return requestJson<ValidationResult>("/validate", {
+    items: toBillItems(bill),
     subtotal: bill.subtotal,
     discount: bill.discount,
     service_charge: bill.serviceCharge,
     tax: bill.taxes.reduce((sum, value) => sum + value, 0),
     printed_total: bill.printedTotal,
-  };
-  const response = await fetch(`${API_BASE_URL}/validate`, {
+  });
+}
+
+function toBillItems(bill: Bill) {
+  return bill.items.map((item) => {
+    if (item.name === null || item.quantity === null || item.unitPrice === null || item.totalPrice === null) {
+      throw new Error("Complete each item's name, quantity, unit price, and total before confirming.");
+    }
+    return {
+      id: item.id,
+      name: item.name,
+      quantity: item.quantity,
+      unit_price: item.unitPrice,
+      total_price: item.totalPrice,
+    };
+  });
+}
+
+async function requestJson<T>(path: string, body: unknown): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
   });
   if (!response.ok) {
-    let detail = "Bill validation failed.";
+    let detail = "Request failed.";
     try {
-      const body = await response.json() as { detail?: string | string[] };
-      if (body.detail) detail = Array.isArray(body.detail) ? body.detail.join(" ") : body.detail;
+      const errorBody = await response.json() as { detail?: string | string[] };
+      if (errorBody.detail) detail = Array.isArray(errorBody.detail) ? errorBody.detail.join(" ") : errorBody.detail;
     } catch {
       // Keep the user-facing fallback for non-JSON or unavailable responses.
     }
     throw new Error(detail);
   }
-  return await response.json() as ValidationResult;
+  return await response.json() as T;
+}
+
+export async function calculateBill(bill: Bill, people: string[], assignments: Assignment): Promise<CalculateResult> {
+  return requestJson<CalculateResult>("/calculate", {
+    bill: {
+      items: toBillItems(bill),
+      subtotal: bill.subtotal,
+      discount: bill.discount,
+      service_charge: bill.serviceCharge,
+      tax: bill.taxes.reduce((sum, value) => sum + value, 0),
+      printed_total: bill.printedTotal,
+    },
+    people,
+    assignments,
+  });
 }
