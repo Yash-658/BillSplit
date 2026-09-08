@@ -3,6 +3,8 @@
 from fastapi import FastAPI
 
 from backend.app.routers.bill import router as bill_router
+from backend.app.routers.extraction import router as extraction_router
 
 app = FastAPI(title="BillSplit API")
 app.include_router(bill_router)
+app.include_router(extraction_router)
