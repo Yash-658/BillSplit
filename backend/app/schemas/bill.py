@@ -21,5 +21,5 @@ class BillExtractionRequest(BaseModel):
     discount: int | None = Field(default=None, ge=0)
     service_charge: int | None = Field(default=None, ge=0)
     tax: int | None = Field(default=None, ge=0)
+    adjustment: int | None = None
     printed_total: int | None = Field(default=None, ge=0)
-

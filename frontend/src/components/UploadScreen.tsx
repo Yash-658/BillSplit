@@ -58,9 +58,9 @@ export function UploadScreen({ onExtracted }: { onExtracted: (bill: Bill) => voi
         <button type="button" onClick={() => inputRef.current?.click()} className="flex w-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-5 py-12 transition hover:border-coral hover:bg-orange-50/30">
           <span className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-100 text-coral"><ImagePlus size={26} /></span>
           <span className="font-semibold">Choose bill photos</span>
-          <span className="mt-1 text-sm text-slate-500">JPG, PNG or HEIC · one or multiple pages</span>
+          <span className="mt-1 text-sm text-slate-500">JPG, PNG or WebP · one or multiple pages</span>
         </button>
-        <input ref={inputRef} className="hidden" type="file" accept="image/*" multiple onChange={(event) => addFiles(event.target.files)} />
+        <input ref={inputRef} className="hidden" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event) => addFiles(event.target.files)} />
         {previews.length > 0 ? (
           <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {previews.map((preview) => (

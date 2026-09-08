@@ -49,6 +49,27 @@ def test_multiple_taxes_zero_adjustments_and_remainder():
     assert result.bill_total == result.allocated_total == 10004
 
 
+def test_positive_adjustment_is_allocated_and_reconciled():
+    bill = Bill((item("meal", 10001),), adjustment=3)
+    result = calculate_split(bill, ["A", "B"], {"meal": ["A", "B"]})
+    assert [result.people[name].adjustment for name in ["A", "B"]] == [2, 1]
+    assert result.bill_total == result.allocated_total == 10004
+
+
+def test_negative_adjustment_is_allocated_and_reconciled():
+    bill = Bill((item("meal", 10001),), adjustment=-3)
+    result = calculate_split(bill, ["A", "B"], {"meal": ["A", "B"]})
+    assert [result.people[name].adjustment for name in ["A", "B"]] == [-2, -1]
+    assert result.bill_total == result.allocated_total == 9998
+
+
+def test_missing_adjustment_defaults_to_zero():
+    bill = Bill((item("meal", 10000),))
+    result = calculate_split(bill, ["A", "B"], {"meal": ["A", "B"]})
+    assert [result.people[name].adjustment for name in ["A", "B"]] == [0, 0]
+    assert result.bill_total == result.allocated_total == 10000
+
+
 def test_rejects_missing_or_invalid_assignments():
     with pytest.raises(ValueError, match="missing assignment"):
         calculate_split(Bill((item("meal", 100),)), ["A"], {})

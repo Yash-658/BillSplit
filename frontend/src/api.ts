@@ -82,6 +82,7 @@ export async function validateBill(bill: Bill): Promise<ValidationResult> {
     discount: bill.discount,
     service_charge: bill.serviceCharge,
     tax: bill.taxes.reduce((sum, value) => sum + value, 0),
+    adjustment: bill.adjustment,
     printed_total: bill.printedTotal,
   });
 }
@@ -128,6 +129,7 @@ export async function calculateBill(bill: Bill, people: string[], assignments: A
       discount: bill.discount,
       service_charge: bill.serviceCharge,
       tax: bill.taxes.reduce((sum, value) => sum + value, 0),
+      adjustment: bill.adjustment,
       printed_total: bill.printedTotal,
     },
     people,

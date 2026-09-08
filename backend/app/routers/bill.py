@@ -35,6 +35,7 @@ def _validation_bill(request: BillExtractionRequest) -> ValidationBill:
         discount=request.discount,
         service_charge=request.service_charge,
         tax=request.tax,
+        adjustment=request.adjustment,
         printed_total=request.printed_total,
     )
 
@@ -50,6 +51,7 @@ def _calculator_bill(request: BillExtractionRequest) -> Bill:
         discount=request.discount or 0,
         service_charge=request.service_charge or 0,
         tax=request.tax or 0,
+        adjustment=request.adjustment or 0,
     )
 
 
@@ -99,6 +101,7 @@ def calculate_endpoint(request: CalculateRequest) -> CalculateResponse:
             discount=breakdown.discount,
             service_charge=breakdown.service_charge,
             tax=breakdown.tax,
+            adjustment=breakdown.adjustment,
             total=breakdown.total,
         )
         for name, breakdown in result.people.items()

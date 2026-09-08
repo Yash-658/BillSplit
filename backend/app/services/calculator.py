@@ -27,6 +27,7 @@ class Bill:
     service_charge: int = 0
     tax: int = 0
     taxes: tuple[int, ...] = ()
+    adjustment: int = 0
 
     @property
     def total_tax(self) -> int:
@@ -44,10 +45,17 @@ class PersonBreakdown:
     discount: int = 0
     service_charge: int = 0
     tax: int = 0
+    adjustment: int = 0
 
     @property
     def total(self) -> int:
-        return self.subtotal - self.discount + self.service_charge + self.tax
+        return (
+            self.subtotal
+            - self.discount
+            + self.service_charge
+            + self.tax
+            + self.adjustment
+        )
 
 
 @dataclass
@@ -98,6 +106,14 @@ def _allocate(amount: int, weights: Sequence[int], labels: Sequence[str]) -> lis
     return floors
 
 
+def _allocate_signed(amount: int, weights: Sequence[int], labels: Sequence[str]) -> list[int]:
+    """Allocate a signed amount while preserving exact reconciliation."""
+
+    if amount >= 0:
+        return _allocate(amount, weights, labels)
+    return [-share for share in _allocate(-amount, weights, labels)]
+
+
 def calculate_split(
     bill: Bill,
     people: Sequence[str],
@@ -119,6 +135,8 @@ def calculate_split(
 
     for name in ("discount", "service_charge", "tax"):
         _validate_amount(name, getattr(bill, name))
+    if not isinstance(bill.adjustment, int) or isinstance(bill.adjustment, bool):
+        raise ValueError("adjustment must be an integer number of paise")
     for index, tax in enumerate(bill.taxes):
         _validate_amount(f"taxes[{index}]", tax)
 
@@ -155,7 +173,7 @@ def calculate_split(
 
     consumption = [result_people[name].subtotal for name in person_names]
     total_consumption = sum(consumption)
-    adjustments = [bill.discount, bill.service_charge, bill.total_tax]
+    adjustments = [bill.discount, bill.service_charge, bill.total_tax, bill.adjustment]
     if total_consumption == 0 and any(adjustments):
         raise ValueError("cannot allocate bill adjustments without item consumption")
     if bill.discount > total_consumption:
@@ -164,12 +182,24 @@ def calculate_split(
     discount_shares = _allocate(bill.discount, consumption, person_names) if bill.discount else [0] * len(person_names)
     service_shares = _allocate(bill.service_charge, consumption, person_names) if bill.service_charge else [0] * len(person_names)
     tax_shares = _allocate(bill.total_tax, consumption, person_names) if bill.total_tax else [0] * len(person_names)
+    adjustment_shares = (
+        _allocate_signed(bill.adjustment, consumption, person_names)
+        if bill.adjustment
+        else [0] * len(person_names)
+    )
 
     for index, name in enumerate(person_names):
         person = result_people[name]
         person.discount = discount_shares[index]
         person.service_charge = service_shares[index]
         person.tax = tax_shares[index]
+        person.adjustment = adjustment_shares[index]
 
-    bill_total = total_consumption - bill.discount + bill.service_charge + bill.total_tax
+    bill_total = (
+        total_consumption
+        - bill.discount
+        + bill.service_charge
+        + bill.total_tax
+        + bill.adjustment
+    )
     return SplitResult(people=result_people, bill_total=bill_total)

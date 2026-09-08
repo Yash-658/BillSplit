@@ -36,6 +36,7 @@ export type PersonBreakdown = {
   discount: number;
   service_charge: number;
   tax: number;
+  adjustment: number;
   total: number;
 };
 

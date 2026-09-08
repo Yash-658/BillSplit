@@ -28,6 +28,7 @@ class ValidationBill:
     discount: Optional[int] = None
     service_charge: Optional[int] = None
     tax: Optional[int] = None
+    adjustment: Optional[int] = None
     printed_total: Optional[int] = None
 
 
@@ -97,6 +98,7 @@ def validate_bill(bill: ValidationBill) -> ValidationResult:
             - _optional_amount(bill.discount)
             + _optional_amount(bill.service_charge)
             + _optional_amount(bill.tax)
+            + _optional_amount(bill.adjustment)
         )
 
     difference = None

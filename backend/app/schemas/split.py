@@ -10,7 +10,7 @@ class CalculateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     bill: BillExtractionRequest
-    people: list[str] = Field(min_length=1)
+    people: list[str] = Field(min_length=2, max_length=7)
     assignments: dict[str, list[str] | str]
 
 
@@ -20,6 +20,7 @@ class PersonBreakdownResponse(BaseModel):
     discount: int
     service_charge: int
     tax: int
+    adjustment: int
     total: int
 
 

@@ -12,6 +12,7 @@ def bill(
     discount=None,
     service_charge=None,
     tax=None,
+    adjustment=None,
     printed_total=10000,
 ):
     return ValidationBill(
@@ -20,6 +21,7 @@ def bill(
         discount=discount,
         service_charge=service_charge,
         tax=tax,
+        adjustment=adjustment,
         printed_total=printed_total,
     )
 
@@ -80,6 +82,26 @@ def test_service_charge_is_included():
 def test_tax_is_included():
     result = validate_bill(bill(tax=1800, printed_total=11800))
     assert result.calculated_total == 11800
+    assert result.status == "valid"
+
+
+def test_positive_adjustment_is_included():
+    result = validate_bill(bill(adjustment=100, printed_total=10100))
+    assert result.calculated_total == 10100
+    assert result.difference == 0
+    assert result.status == "valid"
+
+
+def test_negative_adjustment_is_included():
+    result = validate_bill(bill(adjustment=-100, printed_total=9900))
+    assert result.calculated_total == 9900
+    assert result.difference == 0
+    assert result.status == "valid"
+
+
+def test_missing_adjustment_defaults_to_zero():
+    result = validate_bill(bill(printed_total=10000))
+    assert result.calculated_total == 10000
     assert result.status == "valid"
 
 
