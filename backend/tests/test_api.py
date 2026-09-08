@@ -148,3 +148,11 @@ def test_calculate_endpoint_rejects_invalid_assignment():
 def test_invalid_request_payload_returns_422():
     response = client.post("/validate", json={"items": "not-a-list"})
     assert response.status_code == 422
+
+
+def test_calculate_endpoint_rejects_malformed_request():
+    response = client.post(
+        "/calculate",
+        json={"bill": {"items": "not-a-list"}, "people": ["Yash"], "assignments": {}},
+    )
+    assert response.status_code == 422
