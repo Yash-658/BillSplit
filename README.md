@@ -9,7 +9,7 @@ The system uses AI for **bill perception**, a human for
 **verification**, and deterministic application logic for **validation
 and financial calculations**.
 
-## 🚀 Live Demo **[Try BillSplit →](https://billsplit-frontend-16aw.onrender.com)**
+## 🚀 Live Demo: **[Try BillSplit →](https://billsplit-frontend-16aw.onrender.com)**
 ------------------------------------------------------------------------
 
 ## ✨ Why BillSplit?
