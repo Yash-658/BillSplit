@@ -53,6 +53,17 @@ def _calculator_bill(request: BillExtractionRequest) -> Bill:
     )
 
 
+def _blocking_validation_messages(messages: list[str]) -> list[str]:
+    """Keep printed-total discrepancies as warnings for calculation."""
+
+    return [
+        message
+        for message in messages
+        if not message.startswith("Printed total mismatch:")
+        and message != "Printed total is missing."
+    ]
+
+
 @router.post("/validate", response_model=ValidationResponse)
 def validate_endpoint(request: BillExtractionRequest) -> ValidationResponse:
     result = validate_bill(_validation_bill(request))
@@ -67,6 +78,11 @@ def validate_endpoint(request: BillExtractionRequest) -> ValidationResponse:
 
 @router.post("/calculate", response_model=CalculateResponse)
 def calculate_endpoint(request: CalculateRequest) -> CalculateResponse:
+    validation = validate_bill(_validation_bill(request.bill))
+    blocking_messages = _blocking_validation_messages(validation.messages)
+    if blocking_messages:
+        raise HTTPException(status_code=422, detail=blocking_messages)
+
     try:
         result = calculate_split(
             _calculator_bill(request.bill),
@@ -92,4 +108,11 @@ def calculate_endpoint(request: CalculateRequest) -> CalculateResponse:
         bill_total=result.bill_total,
         allocated_total=result.allocated_total,
         difference=result.difference,
+        validation=ValidationResponse(
+            status=validation.status,
+            calculated_total=validation.calculated_total,
+            printed_total=validation.printed_total,
+            difference=validation.difference,
+            messages=validation.messages,
+        ),
     )

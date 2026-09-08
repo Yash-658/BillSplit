@@ -3,6 +3,7 @@
 from pydantic import BaseModel, ConfigDict, Field
 
 from .bill import BillExtractionRequest
+from .validation import ValidationResponse
 
 
 class CalculateRequest(BaseModel):
@@ -27,3 +28,4 @@ class CalculateResponse(BaseModel):
     bill_total: int
     allocated_total: int
     difference: int
+    validation: ValidationResponse

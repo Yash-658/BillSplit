@@ -55,6 +55,57 @@ def test_calculate_endpoint_accepts_valid_bill():
     assert response.json()["difference"] == 0
 
 
+def test_calculate_endpoint_rejects_invalid_item_arithmetic():
+    payload = reviewed_bill(
+        items=[
+            {
+                "id": "meal",
+                "name": "Meal",
+                "quantity": 3,
+                "unit_price": 5000,
+                "total_price": 10000,
+            }
+        ]
+    )
+    response = client.post(
+        "/calculate",
+        json={"bill": payload, "people": ["Yash"], "assignments": {"meal": ["Yash"]}},
+    )
+    assert response.status_code == 422
+    assert any("total mismatch" in message for message in response.json()["detail"])
+
+
+def test_calculate_endpoint_rejects_invalid_subtotal():
+    response = client.post(
+        "/calculate",
+        json={
+            "bill": reviewed_bill(subtotal=9000, printed_total=9000),
+            "people": ["Yash"],
+            "assignments": {"meal": ["Yash"]},
+        },
+    )
+    assert response.status_code == 422
+    assert any("Subtotal mismatch" in message for message in response.json()["detail"])
+
+
+def test_calculate_endpoint_allows_printed_total_warning():
+    response = client.post(
+        "/calculate",
+        json={
+            "bill": reviewed_bill(printed_total=11000),
+            "people": ["Yash"],
+            "assignments": {"meal": ["Yash"]},
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["people"]["Yash"]["total"] == 10000
+    assert response.json()["validation"]["status"] == "warning"
+    assert any(
+        "Printed total mismatch" in message
+        for message in response.json()["validation"]["messages"]
+    )
+
+
 def test_calculate_endpoint_splits_shared_item():
     payload = reviewed_bill(
         items=[
